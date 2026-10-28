@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Theory in Cloud Resource Allocation</title>
+<style>
+:root{--bg:#070b16;--bg2:#0d1426;--card:#111a30;--line:#22304f;--tx:#e8edf8;--mu:#9aa8c7;--ac:#4cc3ff;--ac2:#8b7bff;--ok:#4be3a2;--warn:#ffb454;--bad:#ff6b8a;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#16264d55,transparent),var(--bg);color:var(--tx);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+a{color:var(--ac)}:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+nav{position:sticky;top:0;z-index:50;background:#070b16ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nv{max-width:1180px;margin:auto;display:flex;align-items:center;gap:8px;padding:10px 20px}
+.nv b{font-size:14px;letter-spacing:.04em;margin-right:auto}
+.nv a{color:var(--mu);text-decoration:none;font-size:13px;padding:6px 9px;border-radius:6px}
+.nv a:hover,.nv a.on{color:var(--tx);background:#1a2745}
+#mb{display:none;background:none;border:1px solid var(--line);color:var(--tx);border-radius:6px;padding:6px 10px;cursor:pointer}
+@media(max-width:900px){#mb{display:block}.nv{flex-wrap:wrap}.nv .lk{display:none;width:100%}.nv .lk.open{display:flex;flex-wrap:wrap}}
+.nv .lk{display:flex;gap:2px;flex-wrap:wrap}
+section{max-width:1180px;margin:auto;padding:64px 20px 8px}
+h1{font-size:clamp(28px,4.5vw,50px);line-height:1.15;margin:.2em 0}
+h2{font-size:clamp(22px,3vw,32px);margin:0 0 6px}h2 small{display:block;font:600 12px var(--mono);color:var(--ac);letter-spacing:.12em;margin-bottom:4px}
+h3{margin:.2em 0 .4em;font-size:18px}p{color:#c7d1e8;margin:.5em 0}
+.grad{background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:16px 0}
+.card{background:linear-gradient(180deg,#131d36,#0f1830);border:1px solid var(--line);border-radius:10px;padding:18px}
+.btn{background:#16223f;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:9px 14px;cursor:pointer;font:inherit;font-size:14px;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--ac)}.btn.p{background:linear-gradient(90deg,#1d6fd6,#6a5cff);border-color:transparent}.btn[aria-pressed=true]{border-color:var(--ac);background:#173056}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+.mono{font-family:var(--mono)}.mu{color:var(--mu)}
+.eq{font:15px var(--mono);background:#0a1326;border:1px solid var(--line);border-left:3px solid var(--ac);padding:10px 14px;border-radius:6px;overflow-x:auto;margin:10px 0;color:#d8e6ff}
+.sw{overflow-x:auto}
+table.mx{border-collapse:separate;border-spacing:6px;margin:8px 0}
+.mx th{font:600 13px var(--mono);color:var(--mu);padding:6px 10px;text-align:center}
+.mx td{padding:0}
+.cell{width:100%;min-width:118px;background:#0b1428;color:var(--tx);border:1.5px solid var(--line);border-radius:8px;padding:10px 8px;cursor:pointer;font:inherit;text-align:center}
+.cell .pay{font:700 20px var(--mono)}.cell .pay .br{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.cell.ne{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset,0 0 14px #4be3a233}
+.cell.so{background:#14203f}.cell.sel{outline:2px solid var(--ac);outline-offset:2px}
+.bd{display:inline-block;font:600 10.5px var(--mono);padding:1px 6px;border-radius:99px;margin:3px 2px 0;border:1px solid}
+.bd.a{color:#7fd0ff;border-color:#7fd0ff}.bd.b{color:#c2b8ff;border-style:dashed;border-color:#c2b8ff}.bd.n{color:var(--ok);border-color:var(--ok)}.bd.s{color:var(--warn);border-color:var(--warn)}
+.leg{display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--mu);margin:6px 0}
+.panel{font-size:14.5px}.panel li{margin:3px 0;color:#c7d1e8}.panel b{color:#fff}
+.stat{font:700 28px var(--mono)}.stat+div{color:var(--mu);font-size:13px}
+table.t{width:100%;border-collapse:collapse;font-size:14px}.t th,.t td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}.t th{color:var(--mu);font-weight:600}
+.warn{border-left:3px solid var(--warn);background:#2a2110;padding:10px 14px;border-radius:6px;color:#ffe1b0}
+.note{border-left:3px solid var(--ac2);background:#16183a;padding:10px 14px;border-radius:6px}
+input[type=range]{width:min(420px,100%);accent-color:var(--ac)}
+input[type=number]{background:#0b1428;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:7px;width:90px;font:inherit}
+svg text{font-family:system-ui,sans-serif}
+.ok{color:var(--ok)}.no{color:var(--bad)}
+pre{background:#0a1326;border:1px solid var(--line);padding:12px;border-radius:8px;overflow-x:auto;font:13px/1.5 var(--mono);color:#cfe0ff}
+abbr{text-decoration:underline dotted;cursor:help}
+footer{margin-top:70px;border-top:1px solid var(--line);padding:30px 20px;text-align:center;color:var(--mu);font-size:14px}
+code{font-family:var(--mono);color:#aee0ff}
+</style>
+</head>
+<body>
+<nav aria-label="Primary"><div class="nv"><b>CLOUD&nbsp;GAME&nbsp;THEORY</b>
+<button id="mb" aria-expanded="false" aria-controls="lk">Menu</button>
+<div class="lk" id="lk">
+<a href="#overview">Overview</a><a href="#problem">Problem</a><a href="#method">Method</a><a href="#engine">Simulator</a><a href="#credit">Credits</a><a href="#repeated">Repeated</a><a href="#impl">Implementation</a><a href="#results">Results</a><a href="#algos">Algorithms</a><a href="#apps">Applications</a><a href="#limits">Limits</a><a href="#refs">References</a></div></div></nav>
+
+<section id="overview">
+<small class="mono" style="color:var(--ac)">GAME THEORY · MANIPAL UNIVERSITY JAIPUR</small>
+<h1><span class="grad">Game Theory-Based Analysis of Strategic Decision-Making in Cloud Resource Allocation</span></h1>
+<p style="max-width:760px">Two cloud tenants share a finite pool of CPU, memory and accelerators. Each chooses how much capacity to claim. This site models that choice as a normal-form game and lets you compute its equilibria, welfare loss and sensitivity yourself.</p>
+<div class="card" style="max-width:760px"><b>Research question.</b> Do individually rational cloud resource allocation choices lead to an outcome that is stable <i>and</i> collectively efficient?</div>
+<div class="row"><a class="btn p" href="#engine">Explore the Model / Open Game Simulator</a><a class="btn" href="#results">View Results</a></div>
+<div class="g2">
+<div class="card"><svg viewBox="0 0 420 220" role="img" aria-label="Two tenants, A and B, drawing capacity from a shared pool of CPU, memory and accelerator capacity" width="100%">
+<rect x="10" y="20" width="110" height="70" rx="8" fill="#16305a" stroke="#4cc3ff"/><text x="65" y="62" fill="#fff" text-anchor="middle" font-size="15">Tenant A</text>
+<rect x="300" y="20" width="110" height="70" rx="8" fill="#2a2457" stroke="#8b7bff"/><text x="355" y="62" fill="#fff" text-anchor="middle" font-size="15">Tenant B</text>
+<rect x="60" y="140" width="300" height="64" rx="10" fill="#0b1428" stroke="#22304f"/>
+<rect x="70" y="150" width="90" height="12" rx="3" fill="#4cc3ff"/><rect x="170" y="150" width="90" height="12" rx="3" fill="#8b7bff"/><rect x="270" y="150" width="80" height="12" rx="3" fill="#4be3a2" opacity=".6"/>
+<rect x="70" y="170" width="140" height="12" rx="3" fill="#4cc3ff" opacity=".5"/><rect x="220" y="170" width="130" height="12" rx="3" fill="#8b7bff" opacity=".5"/>
+<text x="210" y="198" fill="#9aa8c7" text-anchor="middle" font-size="11">shared pool: CPU · memory · accelerators</text>
+<path d="M65 90 L120 140M355 90 L300 140" stroke="#9aa8c7" stroke-dasharray="4 4" fill="none"/><text x="210" y="70" fill="#ffb454" text-anchor="middle" font-size="13">compete</text></svg></div>
+<div class="card"><h3>Three strategies</h3><ul class="panel"><li><b>O — Over-provision:</b> hold more capacity than needed.</li><li><b>R — Right-size:</b> request only what the workload needs.</li><li><b>V — Reserved:</b> commit to dedicated capacity at a fixed price.</li></ul>
+<p class="mu" style="font-size:14px">Team: Adit Gupta (2427030718) · Kavin Gaur (2427030692) · Sambhav Sharma (2427030700)<br>Department of Computer Science and Engineering · Submission: October 2026</p></div></div>
+</section>
+
+<section id="problem">
+<h2><small>B · PROBLEM</small>Shared capacity, private incentives</h2>
+<div class="g2">
+<div class="card"><h3>The shared-capacity problem</h3><p>CPU, memory and accelerator capacity are finite. When tenants compete, demand above capacity causes <b>congestion and queueing</b>, hurting latency and service-level objectives (SLOs). Capacity held but unused creates <b>idle-capacity cost</b>. Each tenant’s best private move can differ from what is best for everyone together: individual incentives versus collective welfare.</p></div>
+<div class="card"><h3>Strategies in detail</h3>
+<p><b>Over-provision (O).</b> Holds more than the workload needs. Protects short-term performance, but congests the pool when many tenants do the same.</p>
+<p><b>Right-size (R).</b> Requests only what is needed, relying on autoscaling and pooling. Efficient, but exposed when rivals hoard capacity.</p>
+<p><b>Reserved (V).</b> Fixed-price dedicated capacity. Reduces exposure to shared-pool contention but costs money when idle.</p></div></div>
+<div class="warn">Payoffs are <b>stylized utility units</b> (a blend of throughput, latency/SLO attainment and cost). They are not calibrated against AWS, Azure, Google Cloud or Kubernetes measurements.</div>
+</section>
+
+<section id="method">
+<h2><small>C · OBJECTIVES &amp; METHOD</small>What the project does</h2>
+<div class="g2"><div class="card"><ol class="panel">
+<li>Model two competing tenants as a normal-form game.</li>
+<li>Identify best responses, dominant strategies, pure and mixed Nash equilibria, and Pareto-efficient outcomes.</li>
+<li>Measure equilibrium inefficiency with the Price of Anarchy.</li>
+<li>Compare the baseline game, Stag Hunt, Hawk-Dove and the extended game with Reserved.</li>
+<li>Study how platform efficiency credits change incentives.</li>
+<li>Explain repeated interaction and the Folk Theorem as a theoretical extension.</li>
+<li>Explain the reproducible Python implementation and its outputs.</li></ol></div>
+<div class="card"><h3>Normal-form game</h3><div class="eq">G = (N, S, u)</div>
+<p><b>N</b> = players (Tenant A, Tenant B). <b>S</b> = strategy sets: {O, R} in the baseline, {O, R, V} in the extension. <b>u</b> = payoff functions, in standardized utility units. In every matrix below each cell stores <span class="mono">(payoff A, payoff B)</span>, with rows = Tenant A and columns = Tenant B.</p></div></div>
+</section>
+
+<section id="engine">
+<h2><small>D–H · GAME ENGINE</small>Interactive payoff matrices</h2>
+<p>Pick a scenario. Every badge, explanation and number below is computed from the matrix by the JavaScript engine in this file. Click a cell to inspect it.</p>
+<div class="row" id="scSel" role="group" aria-label="Scenario"></div>
+<div class="g2">
+<div class="card"><div class="row"><button class="btn" id="brTog" aria-pressed="true">Show best-response marks</button></div>
+<div class="sw" id="mxHost"></div>
+<div class="leg"><span><span class="bd a">A-BR</span> Tenant A best response (underlined payoff)</span><span><span class="bd b">B-BR</span> Tenant B best response</span><span><span class="bd n">NASH</span> pure Nash equilibrium (green border)</span><span><span class="bd s">OPTIMUM</span> social optimum</span></div>
+<div class="note panel" id="cellInfo" aria-live="polite"></div></div>
+<div class="card panel" id="anPanel" aria-live="polite"></div></div>
+<div class="card"><h3>Welfare: worst Nash equilibrium vs. social optimum</h3><div id="wChart"></div></div>
+<div class="note" id="scNote"></div>
+</section>
+
+<section id="credit">
+<h2><small>I · SENSITIVITY</small>Efficiency-credit simulator</h2>
+<p>A platform credit <span class="mono">b</span> is added to the payoff of every tenant that chooses Right-size (to that tenant’s own payoff only). Baseline cells become (O,O)=(3,3), (O,R)=(8,2+b), (R,O)=(2+b,8), (R,R)=(6+b,6+b).</p>
+<div class="warn">Limitation: welfare counts credits received by tenants but does <b>not</b> subtract the platform’s cost of funding them.</div>
+<div class="row"><label for="bR">Credit b</label><input id="bR" type="range" min="0" max="4" step="0.05" value="0"><input id="bN" type="number" min="0" max="4" step="0.01" value="0" aria-label="Credit b numeric"><button class="btn" id="bRst">Reset</button><span id="bErr" class="no" role="alert"></span></div>
+<div class="g2"><div class="card"><div class="sw" id="cMx"></div><p id="cReg" class="note"></p></div><div class="card panel" id="cPan" aria-live="polite"></div></div>
+<div class="g2"><div class="card"><h3>Price of Anarchy vs. b</h3><div id="chPoA"></div></div><div class="card"><h3>Welfare vs. b</h3><div id="chW"></div></div></div>
+<div class="card sw"><h3>Selected values (computed)</h3><table class="t" id="cTab"></table></div>
+<p>Why a small credit can backfire: below b = 1, Over-provision stays strictly dominant, so behavior (and equilibrium welfare of 6) does not change, yet the attainable maximum rises (12 → 13 at b = 0.5). The ratio therefore grows, from 2.00 to about 2.17. At the boundaries b = 1 and b = 2, payoff ties create multiple best responses; the engine reports all of them.</p>
+</section>
+
+<section id="repeated">
+<h2><small>J · THEORETICAL EXTENSION</small>Repeated games and the Folk Theorem</h2>
+<div class="note">Theoretical illustration only. The report’s Python program analyses the one-shot game and does <b>not</b> simulate repeated play.</div>
+<div class="g2"><div class="card"><p>In an indefinitely repeated game with discount factor δ, tenants can sustain mutual Right-sizing (cooperation) using Tit-for-Tat. Temptation payoff 8, cooperation payoff 6, punishment payoff 3.</p>
+<div class="eq">Cooperate forever: 6 / (1 − δ)<br>Defect once, then punished: 8 + 3δ / (1 − δ)<br>Sustainable when 6 ≥ 8 − 5δ ⇒ δ ≥ (8 − 6)/(8 − 3) = 0.40</div></div>
+<div class="card"><div class="row"><label for="dR">δ</label><input id="dR" type="range" min="0" max="1" step="0.01" value="0.5"><b class="mono" id="dV"></b></div><div class="panel" id="dOut" aria-live="polite"></div></div></div>
+</section>
+
+<section id="impl">
+<h2><small>K · IMPLEMENTATION</small>Architecture</h2>
+<div class="card"><svg viewBox="0 0 900 190" width="100%" role="img" aria-label="Pipeline: payoff matrices feed the game engine, which feeds equilibrium analysis, welfare and PoA, then sensitivity analysis, then visualization and report outputs">
+<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#9aa8c7"/></marker></defs>
+<g font-size="13" fill="#fff" text-anchor="middle">
+<rect x="10" y="70" width="130" height="50" rx="8" fill="#16305a" stroke="#4cc3ff"/><text x="75" y="100">Payoff matrices</text>
+<rect x="190" y="70" width="130" height="50" rx="8" fill="#2a2457" stroke="#8b7bff"/><text x="255" y="100">Game engine</text>
+<rect x="380" y="20" width="160" height="50" rx="8" fill="#10273a" stroke="#4be3a2"/><text x="460" y="50">Equilibrium analysis</text>
+<rect x="380" y="120" width="160" height="50" rx="8" fill="#10273a" stroke="#4be3a2"/><text x="460" y="150">Welfare &amp; PoA</text>
+<rect x="600" y="70" width="130" height="50" rx="8" fill="#2a2457" stroke="#8b7bff"/><text x="665" y="100">Sensitivity</text>
+<rect x="770" y="70" width="125" height="50" rx="8" fill="#16305a" stroke="#4cc3ff"/><text x="832" y="92">Visuals &amp;</text><text x="832" y="109">report output</text></g>
+<g stroke="#9aa8c7" fill="none" marker-end="url(#ar)"><path d="M140 95H188"/><path d="M320 85L378 55"/><path d="M320 105L378 135"/><path d="M540 45L598 82"/><path d="M540 145L598 108"/><path d="M730 95H768"/></g></svg></div>
+<div class="g2">
+<div class="card"><h3><code>cloud_game.py</code></h3><p>Game engine: stores payoff matrices; best responses; strict dominance; pure Nash equilibria; social optimum and Pareto efficiency; 2×2 mixed equilibrium; Prisoner’s Dilemma check and Price of Anarchy; scenario games and the Folk Theorem threshold.</p></div>
+<div class="card"><h3><code>run_analysis.py</code></h3><p>Solves baseline, Stag Hunt, Hawk-Dove and 3×3 games; runs the efficiency-credit sweep; writes <code>results.json</code>.</p></div>
+<div class="card"><h3><code>figs.py</code></h3><p>Generates welfare charts, renders payoff matrices with best-response and equilibrium badges, and produces analysis panels.</p></div></div>
+<pre>pip install numpy matplotlib
+python run_analysis.py
+python figs.py</pre>
+<div class="note">This website is a browser-based JavaScript demonstration of the reported models. It does not run the Python files or read <code>results.json</code>.</div>
+</section>
+
+<section id="results">
+<h2><small>L · RESULTS</small>Dashboard</h2>
+<div class="g2" id="dash"></div>
+<div class="card sw"><h3>Scenario comparison (computed live)</h3><table class="t" id="cmp"></table></div>
+<p class="mu">A pure equilibrium is a cell where neither player gains by deviating. An interior mixed equilibrium randomizes with probabilities strictly between 0 and 1. The report computes no mixed equilibrium for the 3×3 game, and neither does this site.</p>
+<div class="row"><button class="btn" id="tBtn">Run model checks</button></div><div id="tOut" class="card panel" hidden aria-live="polite"></div>
+</section>
+
+<section id="algos">
+<h2><small>M · ALGORITHMS</small>Definitions</h2>
+<div class="g2">
+<div class="card"><h3>Best response</h3><p>For each opponent strategy, keep every own strategy that maximizes own payoff (ties kept).</p><h3>Strict dominance</h3><p>Strategy s is strictly dominant if it pays strictly more than every alternative against every opponent strategy.</p><h3>Pure Nash search</h3><pre>for each cell (i,j):
+  if i in BR_A(j) and j in BR_B(i):
+      report (i,j)</pre><p>For an n×n game this is O(n²) work after best responses are tabulated. That claim is for this search only.</p></div>
+<div class="card"><h3>Mixed equilibrium (2×2)</h3><div class="eq">q = (a22 − a12)/(a11 − a12 − a21 + a22)</div><p>q = probability B plays the first strategy, from A’s indifference. p for A comes from B’s payoffs the same way. Valid only if the denominator is nonzero and 0 &lt; probability &lt; 1.</p><h3>Pareto, welfare, PoA</h3><p>Pareto filter: drop an outcome if another is ≥ for both and &gt; for one. Social optimum maximizes the payoff sum. <span class="mono">PoA = max welfare / worst Nash welfare</span> (undefined if there is no equilibrium or worst welfare ≤ 0).</p></div></div>
+</section>
+
+<section id="apps">
+<h2><small>N · APPLICATIONS</small>Where the model applies</h2>
+<div class="g2">
+<div class="card"><h3>1 · Platform pricing</h3><p>Credits, congestion surcharges and quotas reshape payoffs. See the credit simulator: crossing b &gt; 2 flips the equilibrium to (R,R).</p></div>
+<div class="card"><h3>2 · Tenant strategy</h3><p>Reserved capacity shields a tenant from a congested pool. In the 3×3 game, PoA drops from 2.00 to 1.20.</p></div>
+<div class="card"><h3>3 · Scheduler policy</h3><p>PoA quantifies how much welfare allocation incentives destroy, a yardstick for comparing policies.</p></div>
+<div class="card"><h3>4 · Teaching</h3><p>One concrete cloud example illustrates dominance, equilibrium, coordination and anti-coordination.</p></div></div>
+</section>
+
+<section id="limits">
+<h2><small>O · LIMITS &amp; FUTURE</small>Scope</h2>
+<div class="g2"><div class="card"><h3>Limitations (what exists today)</h3><ul class="panel"><li>Payoffs are stylized, not estimated from real cluster traces or price lists.</li><li>Only two players.</li><li>The program analyses the one-shot game.</li><li>Repeated interaction is theoretical.</li><li>Credit welfare omits the platform’s funding cost.</li></ul></div>
+<div class="card"><h3>Future scope (proposed, not built)</h3><ul class="panel"><li>Estimate payoffs from real usage data.</li><li>Simulate repeated play with learning agents.</li><li>Study N-player and network games.</li><li>Explore fair allocation such as Dominant Resource Fairness.</li><li>Model the platform as a third player that sets allocation rules.</li></ul></div></div>
+</section>
+
+<section id="refs">
+<h2><small>P · REFERENCES</small>References</h2>
+<ol class="panel">
+<li>Osborne, M. J. <i>An Introduction to Game Theory</i>. Oxford University Press, 2004.</li>
+<li>Nash, J. F. “Equilibrium points in n-person games.” <i>Proceedings of the National Academy of Sciences</i>, 36(1), 48–49, 1950.</li>
+<li>Axelrod, R. <i>The Evolution of Cooperation</i>. Basic Books, 1984.</li>
+<li>Koutsoupias, E. and Papadimitriou, C. “Worst-case equilibria.” STACS 1999, Lecture Notes in Computer Science 1563, 404–413.</li>
+<li>Fudenberg, D. and Tirole, J. <i>Game Theory</i>. MIT Press, 1991.</li>
+<li>Hardin, G. “The tragedy of the commons.” <i>Science</i>, 162(3859), 1243–1248, 1968.</li>
+<li>Ghodsi, A., Zaharia, M., Hindman, B., Konwinski, A., Shenker, S. and Stoica. “Dominant resource fairness: fair allocation of multiple resource types.” NSDI 2011.</li></ol>
+</section>
+
+<footer><b>Game Theory-Based Analysis of Strategic Decision-Making in Cloud Resource Allocation</b><br>Manipal University Jaipur · Department of Computer Science and Engineering · Course: Game Theory<br>Adit Gupta (2427030718) · Kavin Gaur (2427030692) · Sambhav Sharma (2427030700) · October 2026<br><small>Payoff values are illustrative; this site is an educational game-theoretic analysis.</small></footer>
+
+<script>
+"use strict";
+/*ENGINE-START*/
+const EPS = 1e-9;
+const close = (x, y) => Math.abs(x - y) < EPS;
+const fmt = n => String(+n.toFixed(2));
+
+/** Validate a game: labels + square matrix of [payoffA, payoffB] numbers. */
+function validateGame(g) {
+  const n = g.labels.length;
+  if (g.m.length !== n) throw new Error("Row count mismatch");
+  g.m.forEach(r => { if (r.length !== n) throw new Error("Column count mismatch");
+    r.forEach(c => { if (c.length !== 2 || !c.every(Number.isFinite)) throw new Error("Invalid payoff"); }); });
+  return g;
+}
+const createGame = (name, labels, m) => validateGame({ name, labels, m });
+
+/** brA[j] = rows maximizing A's payoff vs column j; brB[i] = columns maximizing B's payoff vs row i. */
+function getBestResponses(g) {
+  const n = g.labels.length, idx = [...Array(n).keys()];
+  const brA = idx.map(j => { const mx = Math.max(...idx.map(i => g.m[i][j][0])); return idx.filter(i => close(g.m[i][j][0], mx)); });
+  const brB = idx.map(i => { const mx = Math.max(...idx.map(j => g.m[i][j][1])); return idx.filter(j => close(g.m[i][j][1], mx)); });
+  return { brA, brB };
+}
+/** Strictly dominant strategy index (or -1) for each player. */
+function getDominantStrategies(g) {
+  const n = g.labels.length, idx = [...Array(n).keys()];
+  const domA = idx.find(i => idx.every(k => k === i || idx.every(j => g.m[i][j][0] > g.m[k][j][0] + EPS)));
+  const domB = idx.find(j => idx.every(k => k === j || idx.every(i => g.m[i][j][1] > g.m[i][k][1] + EPS)));
+  return { domA: domA ?? -1, domB: domB ?? -1 };
+}
+function getPureNashEquilibria(g, br = getBestResponses(g)) {
+  const out = [], n = g.labels.length;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++)
+    if (br.brA[j].includes(i) && br.brB[i].includes(j)) out.push([i, j]);
+  return out;
+}
+const welfare = (g, i, j) => g.m[i][j][0] + g.m[i][j][1];
+/** Returns the list of Pareto-efficient cells and, for dominated cells, one dominator. */
+function getParetoEfficientOutcomes(g) {
+  const n = g.labels.length, eff = [], dominatedBy = {};
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    let dom = null;
+    for (let k = 0; k < n && !dom; k++) for (let l = 0; l < n; l++) {
+      if (k === i && l === j) continue;
+      const [a, b] = g.m[i][j], [c, d] = g.m[k][l];
+      if (c >= a - EPS && d >= b - EPS && (c > a + EPS || d > b + EPS)) { dom = [k, l]; break; }
+    }
+    if (dom) dominatedBy[i + "," + j] = dom; else eff.push([i, j]);
+  }
+  return { eff, dominatedBy };
+}
+function getSocialOptimum(g) {
+  const n = g.labels.length; let w = -Infinity, cells = [];
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const x = welfare(g, i, j);
+    if (x > w + EPS) { w = x; cells = [[i, j]]; } else if (close(x, w)) cells.push([i, j]);
+  }
+  return { w, cells };
+}
+/** PoA = max welfare / worst Nash welfare. Returns {value, note}. */
+function getPriceOfAnarchy(g, ne, wmax) {
+  if (!ne.length) return { value: null, note: "No pure Nash equilibrium, so PoA is not defined." };
+  const worst = Math.min(...ne.map(([i, j]) => welfare(g, i, j)));
+  if (worst <= EPS) return { value: null, note: "Worst equilibrium welfare is not positive, so the ratio is undefined." };
+  return { value: wmax / worst, worst, note: "" };
+}
+/** 2×2 interior mixed equilibrium. p = P(A plays strategy 0), q = P(B plays strategy 0). */
+function getMixedEquilibrium2x2(g) {
+  if (g.labels.length !== 2) return { applicable: false, note: "Mixed equilibrium is only computed for 2×2 games." };
+  const A = (i, j) => g.m[i][j][0], B = (i, j) => g.m[i][j][1];
+  const dq = A(0,0) - A(0,1) - A(1,0) + A(1,1), dp = B(0,0) - B(1,0) - B(0,1) + B(1,1);
+  if (close(dq, 0) || close(dp, 0)) return { applicable: true, valid: false, note: "Denominator is zero: no unique indifference point." };
+  const q = (A(1,1) - A(0,1)) / dq, p = (B(1,1) - B(1,0)) / dp;
+  const ok = x => x > EPS && x < 1 - EPS;
+  return { applicable: true, valid: ok(p) && ok(q), p, q,
+    note: ok(p) && ok(q) ? "" : "Indifference gives q = " + fmt(q) + ", p = " + fmt(p) + ", outside (0,1): no interior mixed equilibrium." };
+}
+/** PD test (2×2, strategy 0 = defect/O): symmetric payoffs and T > R > P > S with T=u(O,R), R=u(R,R), P=u(O,O), S=u(R,O). */
+function classifyPrisonersDilemma(g) {
+  if (g.labels.length < 2) return false;
+  const m = g.m, sym = m[0][0][0] === m[0][0][1] && m[1][1][0] === m[1][1][1] && m[0][1][0] === m[1][0][1];
+  const T = m[0][1][0], R = m[1][1][0], P = m[0][0][0], S = m[1][0][0];
+  return g.labels.length === 2 && sym && T > R && R > P && P > S;
+}
+function analyze(g) {
+  const br = getBestResponses(g), ne = getPureNashEquilibria(g, br), so = getSocialOptimum(g);
+  return { g, br, ne, dom: getDominantStrategies(g), par: getParetoEfficientOutcomes(g), so,
+    nashW: ne.map(([i, j]) => welfare(g, i, j)), poa: getPriceOfAnarchy(g, ne, so.w),
+    mixed: getMixedEquilibrium2x2(g), pd: classifyPrisonersDilemma(g) };
+}
+/** Baseline game with credit b added to each right-sizing player's own payoff. */
+const buildCreditedGame = b => createGame("Credited (b=" + fmt(b) + ")", ["O", "R"],
+  [[[3, 3], [8, 2 + b]], [[2 + b, 8], [6 + b, 6 + b]]]);
+/** Folk-theorem threshold check for δ (temptation 8, cooperation 6, punishment 3). */
+function folk(d) {
+  const thr = (8 - 6) / (8 - 3);
+  return { thr, met: 6 >= 8 - 5 * d - EPS, coop: d < 1 ? 6 / (1 - d) : null, dev: d < 1 ? 8 + 3 * d / (1 - d) : null };
+}
+const SCEN = {
+  pd: { title: "Prisoner’s Dilemma (baseline)", g: createGame("Prisoner’s Dilemma", ["O","R"], [[[3,3],[8,2]],[[2,8],[6,6]]]),
+    note: "Baseline: Over-provision is strictly dominant, yet mutual Right-sizing pays more for both." },
+  sh: { title: "Stag Hunt", g: createGame("Stag Hunt", ["O","R"], [[[3,3],[5,2]],[[2,5],[8,8]]]),
+    note: "A coordination problem: mutual Right-sizing is payoff-dominant, but mutual Over-provision is still an equilibrium." },
+  hd: { title: "Hawk-Dove", g: createGame("Hawk-Dove", ["O","R"], [[[1,1],[8,4]],[[4,8],[6,6]]]),
+    note: "Each tenant wants to be the only one grabbing burst capacity: anti-coordination." },
+  rv: { title: "3×3 with Reserved", g: createGame("3×3 with Reserved", ["O","R","V"],
+    [[[3,3],[8,2],[6,4]],[[2,8],[6,6],[5,4]],[[4,6],[4,5],[4,4]]]),
+    note: "Reserved capacity removes O’s dominance and lets tenants avoid the shared-pool contest. No mixed equilibrium is computed for 3×3." }
+};
+/*ENGINE-END*/
+
+/* ---------- Self tests ---------- */
+function runTests() {
+  const T = [], t = (n, c) => T.push([n, !!c]);
+  const nm = (a) => a.ne.map(([i, j]) => a.g.labels[i] + a.g.labels[j]).join();
+  let a = analyze(SCEN.pd.g);
+  t("Baseline NE = (O,O)", nm(a) === "OO"); t("Baseline O dominant for both", a.dom.domA === 0 && a.dom.domB === 0);
+  t("Baseline welfare 6 / 12, PoA 2", a.nashW[0] === 6 && a.so.w === 12 && close(a.poa.value, 2));
+  t("Baseline q = 2 → no interior mixed", !a.mixed.valid && close(a.mixed.q, 2)); t("Baseline is a PD", a.pd);
+  a = analyze(SCEN.sh.g);
+  t("Stag Hunt NE (O,O),(R,R)", nm(a) === "OO,RR"); t("Stag Hunt mixed 0.75", a.mixed.valid && close(a.mixed.p, .75) && close(a.mixed.q, .75));
+  t("Stag Hunt welfare 6,16 / max 16", a.nashW.join() === "6,16" && a.so.w === 16);
+  a = analyze(SCEN.hd.g);
+  t("Hawk-Dove NE (O,R),(R,O)", nm(a) === "OR,RO"); t("Hawk-Dove mixed 0.40", a.mixed.valid && close(a.mixed.p, .4) && close(a.mixed.q, .4));
+  t("Hawk-Dove welfare 12 / PoA 1", a.nashW.join() === "12,12" && close(a.poa.value, 1));
+  a = analyze(SCEN.rv.g);
+  t("Reserved NE (O,V),(V,O)", nm(a) === "OV,VO"); t("Reserved worst 10, max 12, PoA 1.2", a.poa.worst === 10 && a.so.w === 12 && close(a.poa.value, 1.2));
+  t("Reserved: O not strictly dominant", a.dom.domA === -1 && a.dom.domB === -1);
+  const c = b => analyze(buildCreditedGame(b));
+  t("b=0 PoA 2", close(c(0).poa.value, 2)); t("b=0.5 PoA ≈ 2.17", Math.abs(c(.5).poa.value - 13 / 6) < 1e-9);
+  t("b=1.5 NE (O,R),(R,O), mix 0.5, PoA 1.3", nm(c(1.5)) === "OR,RO" && close(c(1.5).mixed.p, .5) && Math.abs(c(1.5).poa.value - 15 / 11.5) < 1e-9);
+  t("b=2.5 and 3.5 unique (R,R), PoA 1", nm(c(2.5)) === "RR" && nm(c(3.5)) === "RR" && close(c(2.5).poa.value, 1) && close(c(3.5).poa.value, 1));
+  t("b=1 ties: NE (O,O),(R,O),(O,R)", nm(c(1)) === "OO,OR,RO"); t("b=2 ties: NE (O,R),(R,O),(R,R)", nm(c(2)) === "OR,RO,RR");
+  t("b=0.99 O dominant; b=2.01 R dominant", c(.99).dom.domA === 0 && c(2.01).dom.domA === 1);
+  t("δ=0.39 not met", !folk(.39).met); t("δ=0.40 met", folk(.4).met); t("δ=0.80 met", folk(.8).met);
+  t("δ=1 handled (no division)", folk(1).met && folk(1).coop === null);
+  let bad = false; try { validateGame({ labels: ["O","R"], m: [[[1,1],[1,"x"]],[[1,1],[1,1]]] }); } catch (e) { bad = true; }
+  t("Invalid payoff rejected", bad);
+  return T;
+}
+
+/* ---------- Rendering helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const NS = "http://www.w3.org/2000/svg";
+function sv(tag, at, text) { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (text != null) e.textContent = text; return e; }
+const cellName = (g, i, j) => "(" + g.labels[i] + "," + g.labels[j] + ")";
+const nameList = (g, l) => l.length ? l.map(([i, j]) => cellName(g, i, j)).join(", ") : "none";
+
+/** Renders a payoff matrix into host. st = {sel:[i,j]|null, showBR:bool}. */
+function renderPayoffMatrix(host, a, st, onSel) {
+  const g = a.g, n = g.labels.length; host.replaceChildren();
+  const tb = el("table", "mx"); tb.setAttribute("aria-label", g.name + " payoff matrix");
+  const hr = el("tr"); hr.append(el("th", null, "A \\ B"));
+  g.labels.forEach(l => { const th = el("th", null, "B: " + l); th.scope = "col"; hr.append(th); }); tb.append(hr);
+  for (let i = 0; i < n; i++) {
+    const tr = el("tr"), th = el("th", null, "A: " + g.labels[i]); th.scope = "row"; tr.append(th);
+    for (let j = 0; j < n; j++) {
+      const isNE = a.ne.some(c => c[0] === i && c[1] === j), isSO = a.so.cells.some(c => c[0] === i && c[1] === j);
+      const bA = a.br.brA[j].includes(i), bB = a.br.brB[i].includes(j);
+      const b = el("button", "cell" + (isNE ? " ne" : "") + (isSO ? " so" : "") + (st.sel && st.sel[0] === i && st.sel[1] === j ? " sel" : ""));
+      b.type = "button";
+      const pay = el("div", "pay"); pay.append("(");
+      const x = el("span", st.showBR && bA ? "br" : null, fmt(g.m[i][j][0])), y = el("span", st.showBR && bB ? "br" : null, fmt(g.m[i][j][1]));
+      pay.append(x, ", ", y, ")"); b.append(pay);
+      const bd = (c, t) => b.append(el("span", "bd " + c, t));
+      if (st.showBR && bA) bd("a", "A-BR"); if (st.showBR && bB) bd("b", "B-BR"); if (isNE) bd("n", "NASH"); if (isSO) bd("s", "OPTIMUM");
+      b.setAttribute("aria-label", "A " + g.labels[i] + ", B " + g.labels[j] + ": payoffs " + fmt(g.m[i][j][0]) + " and " + fmt(g.m[i][j][1]) + (isNE ? ", Nash equilibrium" : "") + (isSO ? ", social optimum" : ""));
+      b.addEventListener("click", () => onSel(i, j));
+      const td = el("td"); td.append(b); tr.append(td);
+    }
+    tb.append(tr);
+  }
+  host.append(tb);
+}
+function explainCell(a, i, j) {
+  const g = a.g, L = g.labels, [pa, pb] = g.m[i][j], out = [];
+  const brA = a.br.brA[j], brB = a.br.brB[i];
+  out.push("Cell " + cellName(g, i, j) + ": A gets " + fmt(pa) + ", B gets " + fmt(pb) + " (welfare " + fmt(pa + pb) + ").");
+  out.push("A " + (brA.includes(i) ? "is" : "is not") + " best-responding: against B’s " + L[j] + ", A’s best reply is " + brA.map(k => L[k]).join(" or ") + ".");
+  out.push("B " + (brB.includes(j) ? "is" : "is not") + " best-responding: against A’s " + L[i] + ", B’s best reply is " + brB.map(k => L[k]).join(" or ") + ".");
+  out.push(brA.includes(i) && brB.includes(j) ? "Both are best-responding, so this is a pure Nash equilibrium." : "Not a Nash equilibrium: at least one player gains by deviating.");
+  const d = a.par.dominatedBy[i + "," + j];
+  out.push(d ? "Pareto-dominated by " + cellName(g, d[0], d[1]) + "." : "Pareto-efficient.");
+  out.push(a.so.cells.some(c => c[0] === i && c[1] === j) ? "This is a social optimum." : "Welfare is " + fmt(a.so.w - (pa + pb)) + " below the maximum of " + fmt(a.so.w) + ".");
+  return out;
+}
+function renderAnalysis(host, a) {
+  const g = a.g, L = g.labels; host.replaceChildren(); host.append(el("h3", null, "Engine analysis"));
+  const ul = el("ul"), li = h => { const e = el("li"); e.innerHTML = ""; e.append(...h); ul.append(e); };
+  const B = t => { const b = el("b", null, t); return b; };
+  const dn = (d) => d < 0 ? "none" : L[d];
+  li([B("Strictly dominant: "), "A: " + dn(a.dom.domA) + ", B: " + dn(a.dom.domB)]);
+  li([B("Pure Nash equilibria: "), nameList(g, a.ne)]);
+  li([B("Nash welfare: "), a.nashW.length ? a.nashW.map(fmt).join(", ") : "n/a"]);
+  li([B("Pareto-efficient: "), nameList(g, a.par.eff)]);
+  li([B("Social optimum: "), nameList(g, a.so.cells) + " with welfare " + fmt(a.so.w)]);
+  li([B("Price of Anarchy: "), a.poa.value == null ? a.poa.note : fmt(a.so.w) + " / " + fmt(a.poa.worst) + " = " + a.poa.value.toFixed(2)]);
+  li([B("Mixed equilibrium: "), !a.mixed.applicable ? a.mixed.note : a.mixed.valid ? "P(A plays " + L[0] + ") = " + fmt(a.mixed.p) + ", P(B plays " + L[0] + ") = " + fmt(a.mixed.q) : a.mixed.note]);
+  if (L.length === 2) li([B("Prisoner’s Dilemma structure: "), a.pd ? "yes (symmetric, T > R > P > S)" : "no"]);
+  host.append(ul);
+}
+/** SVG bar chart: worst Nash welfare vs. maximum welfare. */
+function renderWelfareChart(host, a) {
+  host.replaceChildren();
+  const vals = [["Worst Nash", a.nashW.length ? Math.min(...a.nashW) : 0, "#ff6b8a"], ["Social optimum", a.so.w, "#4be3a2"]];
+  const mx = Math.max(a.so.w, 1) * 1.15, s = sv("svg", { viewBox: "0 0 480 220", width: "100%", role: "img", "aria-label": "Welfare comparison" });
+  vals.forEach((v, k) => {
+    const h = 150 * v[1] / mx, x = 90 + k * 170;
+    s.append(sv("rect", { x, y: 180 - h, width: 100, height: h, rx: 6, fill: v[2], opacity: .85 }));
+    s.append(sv("text", { x: x + 50, y: 172 - h, fill: "#fff", "text-anchor": "middle", "font-size": 15, "font-weight": 700 }, fmt(v[1])));
+    s.append(sv("text", { x: x + 50, y: 200, fill: "#9aa8c7", "text-anchor": "middle", "font-size": 13 }, v[0]));
+  });
+  s.append(sv("line", { x1: 60, y1: 180, x2: 450, y2: 180, stroke: "#22304f" }));
+  s.append(sv("text", { x: 14, y: 100, fill: "#9aa8c7", "font-size": 12, transform: "rotate(-90 14 100)", "text-anchor": "middle" }, "Combined welfare"));
+  host.append(s);
+}
+/** SVG line chart. series: [{name,color,dash,pts:[[x,y|null]]}] */
+function lineChart(host, series, o) {
+  host.replaceChildren();
+  const W = 640, H = 300, m = { l: 52, r: 16, t: 34, b: 44 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const X = x => m.l + (x - o.x0) / (o.x1 - o.x0) * pw, Y = y => m.t + ph - (y - o.y0) / (o.y1 - o.y0) * ph;
+  const s = sv("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": o.label });
+  for (let k = 0; k <= 4; k++) {
+    const yv = o.y0 + (o.y1 - o.y0) * k / 4, xv = o.x0 + (o.x1 - o.x0) * k / 4;
+    s.append(sv("line", { x1: m.l, x2: W - m.r, y1: Y(yv), y2: Y(yv), stroke: "#22304f" }));
+    s.append(sv("text", { x: m.l - 6, y: Y(yv) + 4, fill: "#9aa8c7", "font-size": 11, "text-anchor": "end" }, fmt(yv)));
+    s.append(sv("text", { x: X(xv), y: H - m.b + 16, fill: "#9aa8c7", "font-size": 11, "text-anchor": "middle" }, fmt(xv)));
+  }
+  s.append(sv("text", { x: W / 2, y: H - 6, fill: "#9aa8c7", "font-size": 12, "text-anchor": "middle" }, o.xl));
+  s.append(sv("text", { x: 12, y: H / 2, fill: "#9aa8c7", "font-size": 12, transform: "rotate(-90 12 " + H / 2 + ")", "text-anchor": "middle" }, o.yl));
+  series.forEach((se, k) => {
+    let d = "", pen = false;
+    se.pts.forEach(([x, y]) => { if (y == null) { pen = false; return; } d += (pen ? "L" : "M") + X(x).toFixed(1) + " " + Y(y).toFixed(1); pen = true; });
+    s.append(sv("path", { d, fill: "none", stroke: se.color, "stroke-width": 2.5, "stroke-dasharray": se.dash || "" }));
+    s.append(sv("line", { x1: m.l + k * 170, x2: m.l + k * 170 + 24, y1: 16, y2: 16, stroke: se.color, "stroke-width": 2.5, "stroke-dasharray": se.dash || "" }));
+    s.append(sv("text", { x: m.l + k * 170 + 30, y: 20, fill: "#c7d1e8", "font-size": 12 }, se.name));
+  });
+  if (o.mark != null) {
+    s.append(sv("line", { x1: X(o.mark), x2: X(o.mark), y1: m.t, y2: m.t + ph, stroke: "#ffb454", "stroke-dasharray": "4 3" }));
+    s.append(sv("text", { x: X(o.mark) + 4, y: m.t + 12, fill: "#ffb454", "font-size": 11 }, "b = " + fmt(o.mark)));
+  }
+  host.append(s);
+}
+
+/* ---------- Page wiring ---------- */
+const state = { sc: "pd", sel: null, showBR: true };
+function renderScenario() {
+  const sc = SCEN[state.sc], a = analyze(sc.g);
+  document.querySelectorAll("#scSel button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.k === state.sc)));
+  renderPayoffMatrix($("#mxHost"), a, state, (i, j) => { state.sel = [i, j]; renderScenario(); });
+  const info = $("#cellInfo"); info.replaceChildren();
+  if (state.sel) explainCell(a, ...state.sel).forEach(t => info.append(el("div", null, t))); else info.textContent = "Select a cell to see why it is (or is not) marked.";
+  renderAnalysis($("#anPanel"), a); renderWelfareChart($("#wChart"), a); $("#scNote").textContent = sc.note;
+}
+function initScenario() {
+  Object.keys(SCEN).forEach(k => { const b = el("button", "btn", SCEN[k].title); b.type = "button"; b.dataset.k = k;
+    b.addEventListener("click", () => { state.sc = k; state.sel = null; renderScenario(); }); $("#scSel").append(b); });
+  $("#brTog").addEventListener("click", e => { state.showBR = !state.showBR; e.target.setAttribute("aria-pressed", String(state.showBR)); renderScenario(); });
+  renderScenario();
+}
+
+const cst = { b: 0, sel: null };
+function region(b) {
+  if (close(b, 1) || close(b, 2)) return "Boundary case (b = " + fmt(b) + "): payoff ties create multiple best responses.";
+  if (b < 1) return "b < 1: Over-provision remains strictly dominant.";
+  if (b < 2) return "1 < b < 2: neither strategy is strictly dominant; two asymmetric pure equilibria exist.";
+  return "b > 2: Right-size is strictly dominant; (R,R) is the unique pure equilibrium.";
+}
+const sweep = []; for (let k = 0; k <= 80; k++) sweep.push(k / 20);
+function renderCredit() {
+  const a = analyze(buildCreditedGame(cst.b));
+  renderPayoffMatrix($("#cMx"), a, { sel: cst.sel, showBR: true }, (i, j) => { cst.sel = [i, j]; renderCredit(); });
+  $("#cReg").textContent = region(cst.b);
+  renderAnalysis($("#cPan"), a);
+  const rows = sweep.map(b => [b, analyze(buildCreditedGame(b))]);
+  lineChart($("#chPoA"), [{ name: "Price of Anarchy", color: "#4cc3ff", pts: rows.map(([b, r]) => [b, r.poa.value]) }],
+    { x0: 0, x1: 4, y0: 1, y1: 2.5, xl: "Credit b", yl: "PoA", mark: cst.b, label: "Price of Anarchy against credit b" });
+  const ymax = Math.ceil(Math.max(...rows.map(([, r]) => r.so.w)) / 5) * 5;
+  lineChart($("#chW"), [{ name: "Maximum welfare", color: "#4be3a2", pts: rows.map(([b, r]) => [b, r.so.w]) },
+    { name: "Worst Nash welfare", color: "#ff6b8a", dash: "6 4", pts: rows.map(([b, r]) => [b, r.nashW.length ? Math.min(...r.nashW) : null]) }],
+    { x0: 0, x1: 4, y0: 0, y1: ymax, xl: "Credit b", yl: "Welfare", mark: cst.b, label: "Equilibrium and maximum welfare against credit b" });
+  const tb = $("#cTab"); tb.replaceChildren();
+  const hr = el("tr"); ["b", "Pure Nash equilibria", "Nash welfare (worst)", "Max welfare", "PoA"].forEach(h => hr.append(el("th", null, h))); tb.append(hr);
+  [0, .5, 1, 1.5, 2, 2.5, 3.5].forEach(b => { const r = analyze(buildCreditedGame(b)), tr = el("tr");
+    [fmt(b), nameList(r.g, r.ne), r.nashW.length ? fmt(Math.min(...r.nashW)) : "n/a", fmt(r.so.w), r.poa.value == null ? "n/a" : r.poa.value.toFixed(2)].forEach(v => tr.append(el("td", null, v))); tb.append(tr); });
+}
+function setB(v) {
+  const x = parseFloat(v);
+  if (!Number.isFinite(x) || x < 0 || x > 4) { $("#bErr").textContent = "Enter a number from 0 to 4."; return; }
+  $("#bErr").textContent = ""; cst.b = Math.round(x * 100) / 100; $("#bR").value = cst.b; $("#bN").value = cst.b; renderCredit();
+}
+function renderRepeated() {
+  const d = Math.round(parseFloat($("#dR").value) * 100) / 100, f = folk(d); $("#dV").textContent = "δ = " + d.toFixed(2);
+  const o = $("#dOut"); o.replaceChildren();
+  const add = (t, c) => o.append(el("div", c, t));
+  add("Condition 6 ≥ 8 − 5δ → " + fmt(8 - 5 * d) + " ≤ 6: " + (f.met ? "threshold met (δ ≥ " + f.thr.toFixed(2) + ")" : "threshold NOT met"), f.met ? "ok" : "no");
+  if (f.coop == null) add("At δ = 1 the discounted sums 6/(1−δ) and 8 + 3δ/(1−δ) are singular (division by zero), so the inequality decides the outcome.", "mu");
+  else { add("Cooperate forever: " + fmt(f.coop)); add("Defect once, then punished: " + fmt(f.dev)); }
+}
+function renderResults() {
+  const pd = analyze(SCEN.pd.g), rv = analyze(SCEN.rv.g), d = $("#dash"); d.replaceChildren();
+  [[pd.poa.value.toFixed(2), "Baseline PoA"], [nameList(pd.g, pd.ne), "Baseline equilibrium"], [nameList(pd.g, pd.so.cells), "Baseline social optimum"],
+   [fmt(pd.so.w), "Baseline maximum welfare"], [rv.poa.value.toFixed(2), "Reserved-game PoA"], ["b > 2", "Credit for strict Right-size dominance"],
+   ["δ ≥ " + folk(0).thr.toFixed(2), "Repeated-game threshold (theory)"]].forEach(([v, l]) => { const c = el("div", "card"); c.append(el("div", "stat", v), el("div", null, l)); d.append(c); });
+  const tb = $("#cmp"); tb.replaceChildren(); const hr = el("tr");
+  ["Scenario", "Pure equilibria", "Interior mixed equilibrium", "Worst Nash welfare", "Max welfare", "PoA"].forEach(h => hr.append(el("th", null, h))); tb.append(hr);
+  Object.values(SCEN).forEach(s => { const a = analyze(s.g), tr = el("tr");
+    const mx = !a.mixed.applicable ? "Not computed (the report computes none for 3×3)" : a.mixed.valid ? "P(O) = " + fmt(a.mixed.p) + " each" : "None (q = " + fmt(a.mixed.q) + ")";
+    [s.title, nameList(a.g, a.ne), mx, fmt(Math.min(...a.nashW)), fmt(a.so.w), a.poa.value == null ? "n/a" : a.poa.value.toFixed(2)].forEach(v => tr.append(el("td", null, v))); tb.append(tr); });
+}
+function initPage() {
+  initScenario(); renderCredit(); renderRepeated(); renderResults();
+  $("#bR").addEventListener("input", e => setB(e.target.value)); $("#bN").addEventListener("input", e => setB(e.target.value));
+  $("#bRst").addEventListener("click", () => { cst.sel = null; setB(0); });
+  $("#dR").addEventListener("input", renderRepeated);
+  $("#tBtn").addEventListener("click", () => { const o = $("#tOut"), r = runTests(); o.hidden = false; o.replaceChildren();
+    o.append(el("b", r.every(x => x[1]) ? "ok" : "no", r.filter(x => x[1]).length + " / " + r.length + " checks passed"));
+    const ul = el("ul"); r.forEach(([n, ok]) => ul.append(el("li", ok ? "ok" : "no", (ok ? "PASS · " : "FAIL · ") + n))); o.append(ul); });
+  const mb = $("#mb"), lk = $("#lk");
+  mb.addEventListener("click", () => { const o = lk.classList.toggle("open"); mb.setAttribute("aria-expanded", String(o)); });
+  lk.addEventListener("click", e => { if (e.target.tagName === "A") { lk.classList.remove("open"); mb.setAttribute("aria-expanded", "false"); } });
+  const links = [...document.querySelectorAll(".lk a")];
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id)); }), { rootMargin: "-40% 0px -55% 0px" });
+    document.querySelectorAll("section").forEach(s => io.observe(s));
+  }
+}
+document.addEventListener("DOMContentLoaded", initPage);
+</script>
+</body>
+</html>
